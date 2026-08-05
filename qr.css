@@ -1,0 +1,33 @@
+:root { --bg:#fff; --alt:#f6f7f9; --line:#dcdfe4; --fg:#1b1f24; --dim:#5c6570; --link:#0a6cba; }
+@media (prefers-color-scheme:dark) {
+  :root { --bg:#14181d; --alt:#1b2027; --line:#2c333c; --fg:#e3e7ec; --dim:#a2acb8; --link:#6cb6f5; }
+}
+* { box-sizing:border-box; }
+body { margin:0; display:flex; background:var(--bg); color:var(--fg);
+       font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+nav { position:sticky; top:0; flex:0 0 11rem; height:100vh; padding:1.5rem 0;
+      background:var(--alt); border-right:1px solid var(--line); overflow-y:auto; }
+nav a { display:block; padding:.4rem 1.25rem; color:var(--dim); text-decoration:none; }
+nav a:hover { color:var(--fg); }
+nav a.on { color:var(--link); font-weight:600; box-shadow:inset 3px 0 var(--link); }
+main { flex:1; min-width:0; padding:2rem 2.5rem 5rem; max-width:60rem; }
+h1 { margin:0 0 1.25rem; padding-bottom:.5rem; font-size:1.8rem; border-bottom:1px solid var(--line); }
+h2 { margin:2.25rem 0 .75rem; font-size:1.25rem; }
+h3 { margin:1.5rem 0 .5rem; font-size:1.05rem; }
+hr { margin:2rem 0; border:0; border-top:1px solid var(--line); }
+table { width:100%; border-collapse:collapse; margin:1rem 0; font-size:.875rem; }
+th { text-align:left; background:var(--alt); }
+th, td { padding:.45rem .7rem; border:1px solid var(--line); vertical-align:top; }
+td:first-child { white-space:nowrap; }
+code { font:.855em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+       background:var(--alt); padding:.1em .35em; border:1px solid var(--line); border-radius:4px; }
+pre { margin:1rem 0; padding:.875rem 1rem; overflow-x:auto;
+      background:var(--alt); border:1px solid var(--line); border-radius:6px; }
+pre code { border:0; background:none; padding:0; font-size:13px; line-height:1.5; }
+a { color:var(--link); }
+@media (max-width:700px) {
+  body { display:block; }
+  nav { position:static; height:auto; display:flex; flex-wrap:wrap; padding:.5rem; }
+  main { padding:1.25rem 1rem 3rem; }
+  td:first-child { white-space:normal; }
+}
