@@ -1,0 +1,393 @@
+# Bash Quick Reference
+
+Notation: `$` prefixes a shell prompt in examples. Items marked **4.x+** or **5.x+** need
+that bash version — check with `bash --version`. Note: macOS ships bash 3.2, and this host
+has 4.2, so `${x@U}`, `wait -n`, and `local -n` may be unavailable.
+
+---
+
+## Most Common
+
+| Command | Action |
+|---|---|
+| `cd -` | Back to the previous directory |
+| `!!` / `sudo !!` | Repeat the last command / re-run it with sudo |
+| `!$` / `Alt+.` | Last argument of the previous command |
+| `Ctrl+R` | Reverse-search history (`Ctrl+R` again for older) |
+| `Ctrl+A` / `Ctrl+E` | Jump to start / end of line |
+| `Ctrl+W` / `Ctrl+U` | Delete previous word / whole line |
+| `Ctrl+L` | Clear the screen |
+| `Ctrl+C` / `Ctrl+Z` | Interrupt / suspend (`fg` to resume) |
+| `cmd1 && cmd2` | Run `cmd2` only if `cmd1` succeeded |
+| `cmd \|\| echo failed` | Run only on failure |
+| `cmd > out.txt 2>&1` | Redirect stdout and stderr to a file |
+| `cmd 2>/dev/null` | Discard errors |
+| `cmd \| tee out.txt` | Show output *and* save it |
+| `$(cmd)` | Command substitution |
+| `"$var"` | Always quote expansions |
+| `for f in *.log; do echo "$f"; done` | Loop over files |
+| `grep -rn 'pat' .` | Recursive search with line numbers |
+| `find . -name '*.py'` | Find files by name |
+| `history \| grep ssh` | Search your history |
+| `type -a cmd` | Is it a builtin, alias, function, or file? |
+
+---
+
+## Navigation & Files
+
+| Command | Action |
+|---|---|
+| `cd`, `cd ~`, `cd -`, `cd ..` | Home, home, previous, parent |
+| `pushd dir` / `popd` / `dirs -v` | Directory stack |
+| `ls -lah`, `ls -lt`, `ls -lS` | Long+hidden, by time, by size |
+| `tree -L 2` | Directory tree, 2 levels |
+| `cp -a src dst` | Copy preserving everything |
+| `cp -r src/ dst/` | Recursive copy |
+| `mv a b` | Move or rename |
+| `rm -rf dir` | **Destructive** recursive delete |
+| `rm -i file` | Prompt before each removal |
+| `mkdir -p a/b/c` | Create nested directories |
+| `ln -s target link` | Symlink |
+| `readlink -f path` | Resolve to an absolute real path |
+| `touch file` | Create or update mtime |
+| `stat file` | Full metadata |
+| `du -sh *` / `du -sh * \| sort -h` | Sizes, sorted |
+| `df -h` | Filesystem usage |
+| `chmod 644 f` / `chmod +x f` | Permissions |
+| `chown user:group f` | Ownership |
+| `basename /a/b.txt .txt` / `dirname /a/b` | Path parts |
+| `realpath --relative-to=. /a/b` | Relative path |
+
+---
+
+## Finding Things
+
+| Command | Action |
+|---|---|
+| `find . -name '*.log'` | By glob (quote it) |
+| `find . -iname '*readme*'` | Case-insensitive |
+| `find . -type f -o -type d` | Files or directories |
+| `find . -mtime -7` | Modified in the last 7 days |
+| `find . -size +100M` | Larger than 100 MB |
+| `find . -name '*.tmp' -delete` | **Destructive** — delete matches |
+| `find . -name '*.c' -exec grep -l main {} +` | Batch a command over results |
+| `find . -maxdepth 2 -name x` | Limit depth |
+| `find . -path '*/node_modules' -prune -o -print` | Skip a directory |
+| `grep -rn 'pat' --include='*.py' .` | Recursive, filtered by extension |
+| `grep -ril 'pat' .` | Case-insensitive, list filenames only |
+| `grep -c 'pat' f` | Count matches |
+| `grep -v 'pat' f` | Invert |
+| `grep -E 'a\|b' f` | Extended regex |
+| `grep -F 'literal' f` | Fixed string, no regex |
+| `grep -A3 -B3 'pat' f` | Context lines |
+| `grep -o 'pat' f` | Print only the matched part |
+| `which cmd` / `type -a cmd` / `command -v cmd` | Locate a command |
+| `locate name` | Search the filename database (needs `updatedb`) |
+
+---
+
+## Pipes & Redirection
+
+| Syntax | Meaning |
+|---|---|
+| `>` / `>>` | Overwrite / append stdout |
+| `2>` / `2>>` | Redirect stderr |
+| `&>file` or `>file 2>&1` | Both streams to a file |
+| `2>&1 \| less` | Pipe both streams |
+| `<file` | Read stdin from a file |
+| `<<<'string'` | Here-string |
+| `<<EOF ... EOF` | Heredoc (interpolates) |
+| `<<'EOF' ... EOF` | Heredoc, literal (no expansion) |
+| `<(cmd)` | Process substitution as a file: `diff <(a) <(b)` |
+| `>(cmd)` | Output process substitution |
+| `\|&` | Shorthand for `2>&1 \|` (4.x+) |
+| `cmd &` | Background |
+| `cmd; cmd` | Sequential regardless of status |
+| `exec > log 2>&1` | Redirect the rest of the script |
+| `/dev/null`, `/dev/stdin`, `/dev/tty` | Special files |
+
+Text plumbing:
+
+```bash
+sort file | uniq -c | sort -rn | head        # frequency count, descending
+cut -d, -f2,5 data.csv                       # select CSV columns
+tr -d '\r' < win.txt > unix.txt              # strip CRs
+sed 's/old/new/g' f                          # substitute (add -i to edit in place)
+sed -n '10,20p' f                            # print a line range
+awk -F, '$3 > 100 { print $1, $3 }' data.csv # filter and project
+awk '{ s += $1 } END { print s }' nums       # sum a column
+paste a b                                    # join files side by side
+column -t -s,                                # align columns
+xargs -n1 -P4 cmd < list                     # parallel over a list
+xargs -0 rm < <(find . -name '*.tmp' -print0) # NUL-safe piping
+```
+
+---
+
+## Variables & Expansion
+
+```bash
+name=ada                    # no spaces around =
+readonly PI=3.14
+export PATH="$PATH:/opt/bin"
+unset name
+local x=1                   # inside functions only
+declare -i n=5              # integer
+declare -a arr=(a b c)      # array
+declare -A map=([k]=v)      # associative array (4.x+)
+```
+
+| Expansion | Result |
+|---|---|
+| `${var}` | Value; braces needed before adjacent text |
+| `${var:-default}` | Value, or `default` if unset/empty |
+| `${var:=default}` | Same, and assign it |
+| `${var:?msg}` | Error out with `msg` if unset |
+| `${var:+alt}` | `alt` only if `var` is set |
+| `${#var}` | Length |
+| `${var:2:5}` | Substring from index 2, length 5 |
+| `${var#pre}` / `${var##pre}` | Strip shortest / longest prefix |
+| `${var%suf}` / `${var%%suf}` | Strip shortest / longest suffix |
+| `${var/old/new}` / `${var//old/new}` | Replace first / all |
+| `${var^}` / `${var^^}` / `${var,,}` | Capitalize / upper / lower (4.x+) |
+| `${!prefix*}` | Names of variables starting with `prefix` |
+| `${arr[@]}` / `${arr[*]}` | All elements (separate words / one word) |
+| `${#arr[@]}` | Element count |
+| `${arr[@]:1:2}` | Array slice |
+| `${!map[@]}` | Associative array keys (4.x+) |
+| `$((2 + 3 * 4))` | Arithmetic |
+| `$(cmd)` | Command output |
+| `{1..10}` / `{a..e}` / `{1..10..2}` | Brace expansion |
+| `{foo,bar}.txt` | → `foo.txt bar.txt` |
+
+Special: `$0` script name, `$1`–`$9` positional, `$#` arg count, `$@` all args (quoted
+individually — almost always what you want), `$*` all args as one, `$?` last exit status,
+`$$` current PID, `$!` last background PID, `$RANDOM`, `$SECONDS`, `$LINENO`, `$PWD`,
+`$OLDPWD`, `$IFS` field separator.
+
+---
+
+## Conditionals & Tests
+
+```bash
+if [[ -f $file ]]; then
+  echo exists
+elif [[ -d $file ]]; then
+  echo dir
+else
+  echo missing
+fi
+
+[[ $x == y* ]] && echo 'glob match'
+[[ $x =~ ^[0-9]+$ ]] && echo 'numeric'   # regex; groups in ${BASH_REMATCH[@]}
+(( n > 5 )) && echo 'arithmetic context'
+
+case $1 in
+  start|up)  echo starting ;;
+  stop)      echo stopping ;;
+  *)         echo "usage: $0 {start|stop}" >&2; exit 1 ;;
+esac
+```
+
+| Test | True when |
+|---|---|
+| `-e f` / `-f f` / `-d f` | Exists / regular file / directory |
+| `-r f` / `-w f` / `-x f` | Readable / writable / executable |
+| `-s f` | Non-empty |
+| `-L f` | Symlink |
+| `f1 -nt f2` / `-ot` | Newer than / older than |
+| `-z "$s"` / `-n "$s"` | Empty / non-empty string |
+| `$a == $b` / `!=` | String equality (inside `[[ ]]`) |
+| `$a < $b` | Lexicographic (inside `[[ ]]`) |
+| `-eq -ne -lt -le -gt -ge` | Numeric comparison |
+| `&&` `\|\|` `!` | Logic (inside `[[ ]]`) |
+| `-v name` | Variable is set (4.2+) |
+
+Use `[[ ]]` over `[ ]` in bash: no word-splitting surprises, supports `=~` and `&&`.
+
+---
+
+## Loops & Functions
+
+```bash
+for f in *.txt; do echo "$f"; done
+for i in {1..5}; do echo "$i"; done
+for ((i = 0; i < 5; i++)); do echo "$i"; done
+for k in "${!map[@]}"; do echo "$k=${map[$k]}"; done
+
+while read -r line; do echo "$line"; done < file      # -r: don't mangle backslashes
+while IFS=, read -r a b; do echo "$a|$b"; done < csv   # split on commas
+until nc -z localhost 8080; do sleep 1; done
+
+find . -name '*.log' -print0 | while IFS= read -r -d '' f; do echo "$f"; done
+
+# break / continue / continue 2 (outer loop)
+```
+
+```bash
+greet() {
+    local name=${1:?name required}
+    local greeting=${2:-Hello}
+    printf '%s, %s!\n' "$greeting" "$name"
+    return 0
+}
+greet ada
+greet ada Hi
+
+# Capture output vs. exit status
+out=$(greet ada)          # stdout
+greet ada; status=$?      # exit code
+```
+
+Functions see `$1`, `$@` etc. as their own arguments. `local` keeps variables scoped —
+without it, everything is global.
+
+---
+
+## Job Control & Processes
+
+| Command | Action |
+|---|---|
+| `cmd &` | Start in the background |
+| `jobs -l` | List jobs with PIDs |
+| `fg %1` / `bg %1` | Foreground / background job 1 |
+| `Ctrl+Z` | Suspend the foreground job |
+| `disown -h %1` | Detach from the shell |
+| `nohup cmd &> out.log &` | Survive logout |
+| `wait` / `wait $pid` | Block until children finish |
+| `wait -n` | Wait for the *next* one to finish (4.3+) |
+| `kill %1` / `kill <pid>` | TERM a job or PID |
+| `kill -9 <pid>` | SIGKILL (last resort) |
+| `pkill -f 'pattern'` | Kill by command-line pattern |
+| `pgrep -af node` | Find PIDs with full command lines |
+| `ps aux \| grep x` | Process list |
+| `ps -ef --forest` | Process tree |
+| `top` / `htop` | Live monitor |
+| `timeout 30 cmd` | Kill after 30 seconds |
+| `time cmd` | Wall/user/sys timing |
+| `lsof -i :8080` | What's on that port |
+| `lsof -p <pid>` | Files a process has open |
+| `strace -f -e trace=openat cmd` | Trace syscalls (Linux) |
+
+Simple parallelism:
+
+```bash
+for h in a b c; do ssh "$h" uptime & done; wait
+printf '%s\n' "${hosts[@]}" | xargs -P8 -I{} ssh {} uptime
+```
+
+---
+
+## History & Line Editing
+
+| Keys / Syntax | Action |
+|---|---|
+| `Ctrl+R` / `Ctrl+S` | Search backward / forward |
+| `Ctrl+G` | Abort a search |
+| `!!` | Previous command |
+| `!n` / `!-2` | History entry `n` / two back |
+| `!ssh` | Last command starting with `ssh` |
+| `!?err?` | Last command containing `err` |
+| `!$` / `!^` / `!*` | Last arg / first arg / all args of previous |
+| `^old^new` | Re-run previous, substituting once |
+| `!!:gs/a/b/` | Re-run with global substitution |
+| `Alt+.` | Insert last argument (repeat to cycle) |
+| `Ctrl+A/E/B/F` | Line start/end, char back/forward |
+| `Alt+B` / `Alt+F` | Word back / forward |
+| `Ctrl+W` / `Alt+D` | Kill word back / forward |
+| `Ctrl+U` / `Ctrl+K` | Kill to line start / end |
+| `Ctrl+Y` | Yank (paste) what was killed |
+| `Ctrl+X Ctrl+E` | Edit the current line in `$EDITOR` |
+| `Ctrl+T` | Transpose characters |
+| `history -d 42` | Delete one history entry |
+| `HISTIGNORE='ls:cd:history'` | Don't record these |
+| `HISTCONTROL=ignoreboth:erasedups` | Skip dupes and space-prefixed commands |
+| ` cmd` (leading space) | Keep out of history (with `ignorespace`) |
+
+---
+
+## Scripting Safely
+
+```bash
+#!/usr/bin/env bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+trap 'echo "error on line $LINENO" >&2' ERR
+trap 'rm -rf "$tmp"' EXIT
+
+tmp=$(mktemp -d)
+readonly SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+```
+
+| Flag | Effect |
+|---|---|
+| `set -e` | Exit on any unhandled failure |
+| `set -u` | Error on unset variables |
+| `set -o pipefail` | A pipeline fails if any stage fails |
+| `set -E` | ERR trap fires inside functions |
+| `set -x` / `set +x` | Trace commands on / off |
+| `set -n` | Syntax check without running |
+| `shopt -s nullglob` | Unmatched globs expand to nothing, not the literal |
+| `shopt -s globstar` | `**` recurses (4.x+) |
+| `shopt -s extglob` | `!(x)`, `@(a\|b)`, `+(x)` patterns |
+| `shopt -s failglob` | Error on unmatched globs |
+
+| Tool | Use |
+|---|---|
+| `mktemp` / `mktemp -d` | Safe temp file / directory |
+| `trap 'cleanup' EXIT INT TERM` | Cleanup handler |
+| `getopts 'vf:' opt` | Parse short options |
+| `printf '%s\n'` | Portable, safer than `echo` |
+| `read -rp 'Name: ' name` | Prompt for input |
+| `read -rsp 'Pass: ' pw` | Silent input |
+| `exit 1` | Non-zero status signals failure |
+| `shellcheck script.sh` | Lint — catches most real bugs |
+| `bash -n script.sh` | Parse-only check |
+| `bash -x script.sh` | Run with tracing |
+| `caller` / `${BASH_SOURCE[0]}` / `${FUNCNAME[0]}` | Introspection |
+| `[[ ${BASH_SOURCE[0]} == "$0" ]]` | "Am I being run, not sourced?" |
+
+`set -e` has real gaps: it doesn't fire inside `if` conditions, `&&` chains, or command
+substitutions in some positions. Check exit codes explicitly where it matters.
+
+---
+
+## Environment & Config
+
+| Command | Action |
+|---|---|
+| `env` / `printenv X` | All / one environment variable |
+| `export X=1` | Put a variable in the environment |
+| `X=1 cmd` | Set for one command only |
+| `env -i cmd` | Run with an empty environment |
+| `source f` / `. f` | Run in the current shell |
+| `alias ll='ls -lah'` / `unalias ll` | Aliases |
+| `\ls` | Bypass an alias |
+| `command ls` | Bypass aliases and functions |
+| `hash -r` | Forget cached command paths |
+| `ulimit -a` | Resource limits |
+| `umask 022` | Default permission mask |
+
+Startup files: interactive login shells read `/etc/profile` then the first of
+`~/.bash_profile`, `~/.bash_login`, `~/.profile`. Interactive non-login shells read
+`~/.bashrc`. Put PATH and env in the profile, aliases and prompt in `.bashrc`, and source
+`.bashrc` from the profile.
+
+---
+
+## Cheat Sheet Card
+
+```
+NAVIGATE           SEARCH                    EXPANSION              SAFETY
+cd -               grep -rn 'p' .            ${v:-default}          set -Eeuo pipefail
+pushd/popd         grep -ril 'p' .           ${v#pre} ${v%suf}      trap 'rm -rf $t' EXIT
+ls -lah  du -sh *  find . -name '*.x'        ${v//old/new}          mktemp -d
+readlink -f p      find . -mtime -7          ${#v}  ${v:2:5}        shellcheck f.sh
+                   find ... -exec c {} +     ${arr[@]}  ${#arr[@]}  bash -n f.sh
+
+REDIRECT           HISTORY                   TEST                   JOBS
+> >> 2>&1 &>       Ctrl+R    !!   !$         [[ -f f ]]  [[ -d d ]] cmd &   jobs -l
+| tee f            Alt+.     !ssh            [[ $a == b* ]]         fg %1   bg %1
+<(cmd) >(cmd)      ^old^new  !!:gs/a/b/      [[ $s =~ re ]]         kill -9  pkill -f
+<<EOF  <<'EOF'     Ctrl+X Ctrl+E             (( n > 5 ))            timeout 30 cmd
+```

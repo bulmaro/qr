@@ -1,0 +1,451 @@
+# Python Quick Reference
+
+Targets Python 3.11+; version-gated features are marked (e.g. **3.10+**). Note: this host
+has Python 3.7, where `match`, `|` type unions, `str.removeprefix`, and
+`tomllib` are unavailable.
+
+---
+
+## Most Common
+
+| Code | Meaning |
+|---|---|
+| `python3 -m venv .venv && source .venv/bin/activate` | Create and enter a virtualenv |
+| `python3 -m pip install -r requirements.txt` | Install dependencies |
+| `python3 -m pytest -x -q` | Run tests, stop on first failure |
+| `python3 -i script.py` | Run, then drop into the REPL |
+| `python3 -m pdb script.py` | Debug |
+| `breakpoint()` | Drop into the debugger at this line |
+| `print(f'{x=}')` | Print name and value (**3.8+**) |
+| `help(obj)` / `dir(obj)` | Docs / attribute list |
+| `type(x)` / `isinstance(x, int)` | Runtime type / type check |
+| `len(x)`, `sorted(x)`, `sum(x)`, `enumerate(x)` | Everyday builtins |
+| `[f(i) for i in xs if p(i)]` | List comprehension |
+| `{k: v for k, v in pairs}` | Dict comprehension |
+| `with open(p) as f:` | Context-managed file handling |
+| `from pathlib import Path` | Modern path handling |
+| `import json; json.dumps(obj, indent=2)` | JSON |
+| `try/except/else/finally` | Error handling |
+| `if __name__ == '__main__':` | Script entry point |
+| `python3 -c 'import sys; print(sys.version)'` | One-liner |
+| `python3 -m json.tool < f.json` | Pretty-print JSON from the shell |
+| `python3 -m http.server 8000` | Serve the current directory |
+
+---
+
+## Types & Literals
+
+```python
+n: int = 42                 # arbitrary precision
+f: float = 3.14
+c = 2 + 3j                  # complex
+b: bool = True
+s: str = 'text'
+by: bytes = b'raw'
+none = None
+
+xs: list[int] = [1, 2, 3]           # mutable, ordered
+t: tuple[int, str] = (1, 'a')       # immutable
+st: set[int] = {1, 2, 3}            # unique, unordered
+fs = frozenset({1, 2})              # immutable set
+d: dict[str, int] = {'a': 1}        # insertion-ordered (3.7+)
+
+1_000_000, 0xff, 0o17, 0b1010, 1e-5  # numeric literal forms
+```
+
+| Operation | Result |
+|---|---|
+| `7 / 2` → `3.5` | True division |
+| `7 // 2` → `3`, `-7 // 2` → `-4` | Floor division |
+| `7 % 3`, `2 ** 10` | Modulo, power |
+| `divmod(7, 2)` → `(3, 1)` | Quotient and remainder |
+| `int('42')`, `float('1.5')`, `str(42)` | Conversion |
+| `int('ff', 16)` | Parse with a base |
+| `round(2.675, 2)` | Banker's rounding — use `decimal` for money |
+| `x is None` | Identity (always use `is` for `None`) |
+| `a == b` | Value equality |
+| `1 < x < 10` | Chained comparison |
+| `x := f()` | Walrus — assign inside an expression (**3.8+**) |
+
+---
+
+## Strings
+
+| Code | Result |
+|---|---|
+| `f'{name} is {age}'` | f-string interpolation |
+| `f'{v:.2f}'`, `f'{n:,}'`, `f'{n:08.3f}'` | Format spec: precision, thousands, pad |
+| `f'{x!r}'` | `repr()` inside an f-string |
+| `f'{x=}'` | Renders as `x=value` (**3.8+**) |
+| `f'{v:>10}'` / `:<10` / `:^10` | Right / left / center align |
+| `'a,b'.split(',')` / `','.join(xs)` | Split / join |
+| `s.strip()`, `.lstrip()`, `.rstrip()` | Trim whitespace |
+| `s.replace('a', 'b')` | Substitute |
+| `s.startswith('x')` / `.endswith('y')` | Prefix / suffix test |
+| `s.removeprefix('x')` / `.removesuffix('y')` | Strip once (**3.9+**) |
+| `s.upper()`, `.lower()`, `.title()`, `.casefold()` | Case |
+| `s.find('x')` → `-1` if absent; `s.index('x')` raises | Locate |
+| `s.count('x')` | Occurrences |
+| `s.zfill(5)`, `s.ljust(10, '.')` | Pad |
+| `s.splitlines()` | Split on newlines |
+| `s.encode('utf-8')` / `b.decode('utf-8')` | Bytes ↔ str |
+| `'x' * 3`, `s[::-1]`, `s[2:5]` | Repeat, reverse, slice |
+| `r'\d+'` | Raw string (no escape processing) |
+| `'''multi\nline'''` | Triple-quoted |
+| `textwrap.dedent(s)` | Remove common indentation |
+
+Strings are immutable — every method returns a new one. Build them with `''.join(parts)`
+in a loop, not `+=`.
+
+---
+
+## Collections
+
+| Code | Action |
+|---|---|
+| `xs.append(x)`, `.extend(ys)`, `.insert(0, x)` | Add to a list |
+| `xs.pop()` / `.pop(0)` / `.remove(v)` | Remove by position / value |
+| `xs.sort(key=len, reverse=True)` | Sort in place |
+| `sorted(xs, key=lambda d: d['n'])` | New sorted list |
+| `xs.index(v)`, `xs.count(v)`, `v in xs` | Search |
+| `xs[::2]`, `xs[::-1]`, `xs[1:-1]` | Slicing |
+| `list(reversed(xs))` | Reverse |
+| `d.get(k, default)` | Safe lookup |
+| `d.setdefault(k, [])` | Get or initialize |
+| `d.keys()`, `.values()`, `.items()` | Views |
+| `d \| other` / `d \|= other` | Merge dicts (**3.9+**) |
+| `{**a, **b}` | Merge (older style) |
+| `d.pop(k, None)` | Remove safely |
+| `a & b`, `a \| b`, `a - b`, `a ^ b` | Set intersect, union, diff, symmetric diff |
+| `a <= b` | Subset test |
+| `zip(a, b, strict=True)` | Pair up; error on length mismatch (**3.10+**) |
+| `enumerate(xs, start=1)` | Index and value |
+| `any(...)` / `all(...)` | Short-circuit predicates |
+| `min(xs, key=f)` / `max(xs, default=0)` | Extremes |
+| `next(iter(xs), None)` | First element or `None` |
+
+```python
+from collections import defaultdict, Counter, deque, namedtuple, OrderedDict
+
+groups = defaultdict(list)
+groups['a'].append(1)                    # no KeyError
+
+Counter('mississippi').most_common(2)    # [('i', 4), ('s', 4)]
+
+q = deque(maxlen=100)                    # O(1) appends/pops at both ends
+q.appendleft(0); q.rotate(1)
+
+import itertools as it
+it.chain(a, b)            # concatenate iterables
+it.groupby(sorted(xs, key=f), key=f)     # must be pre-sorted
+it.product(a, b)          # cartesian product
+it.combinations(xs, 2)    # pairs
+it.islice(gen, 10)        # take 10 from an iterator
+it.pairwise(xs)           # consecutive pairs (3.10+)
+it.batched(xs, 3)         # fixed-size chunks (3.12+)
+
+from functools import cache, lru_cache, partial, reduce, cached_property
+@cache                                   # memoize (3.9+)
+def fib(n): return n if n < 2 else fib(n-1) + fib(n-2)
+```
+
+---
+
+## Control Flow
+
+```python
+if x > 10:
+    ...
+elif x > 5:
+    ...
+else:
+    ...
+
+value = 'big' if x > 10 else 'small'     # ternary
+
+for i, item in enumerate(items):
+    if skip(item):
+        continue
+    if done(item):
+        break
+else:
+    print('loop finished without break')  # else runs only if no break
+
+while cond:
+    ...
+
+for k, v in d.items(): ...
+for a, b in zip(xs, ys): ...
+
+match command.split():                    # structural pattern matching (3.10+)
+    case ['go', direction]:
+        move(direction)
+    case ['quit' | 'exit']:
+        raise SystemExit
+    case {'action': str(a), **rest}:
+        handle(a, rest)
+    case Point(x=0, y=y):
+        on_axis(y)
+    case _:
+        unknown()
+```
+
+---
+
+## Functions
+
+```python
+def fetch(url: str, *, timeout: float = 5.0, retries: int = 3) -> bytes:
+    """Docstring. Keyword-only params come after *."""
+    ...
+
+def variadic(first, *args, **kwargs): ...
+fetch(*arg_list, **kwarg_dict)             # unpack when calling
+
+def pos_only(a, b, /, c): ...              # a, b positional-only (3.8+)
+
+square = lambda x: x * x                   # prefer a def for anything real
+
+# DANGER: mutable default is created once and shared
+def bad(items=[]): items.append(1)
+def good(items=None): items = items or []
+
+from typing import Optional, Iterable, Callable, Any, TypeVar, Protocol
+def f(x: int | None = None) -> list[str]: ...     # 3.10+ union syntax
+
+def counter():                             # generator
+    n = 0
+    while True:
+        yield n
+        n += 1
+
+def flatten(nested):
+    for group in nested:
+        yield from group                   # delegate to a sub-iterator
+```
+
+Decorators:
+
+```python
+import functools
+
+def logged(fn):
+    @functools.wraps(fn)                   # preserve __name__ and __doc__
+    def wrapper(*args, **kwargs):
+        print(f'calling {fn.__name__}')
+        return fn(*args, **kwargs)
+    return wrapper
+
+@logged
+def work(): ...
+```
+
+---
+
+## Classes
+
+```python
+from dataclasses import dataclass, field
+
+@dataclass(frozen=True, slots=True)        # slots: 3.10+
+class Point:
+    x: float
+    y: float = 0.0
+    tags: list[str] = field(default_factory=list)
+
+    def dist(self) -> float:
+        return (self.x**2 + self.y**2) ** 0.5
+
+class Shape:
+    kind = 'generic'                       # class attribute
+
+    def __init__(self, name: str):
+        self.name = name                   # instance attribute
+        self._internal = None              # convention: private
+        self.__mangled = None              # name-mangled
+
+    def __repr__(self) -> str: return f'Shape({self.name!r})'
+    def __str__(self) -> str: return self.name
+    def __eq__(self, other) -> bool: return self.name == other.name
+    def __hash__(self) -> int: return hash(self.name)
+    def __len__(self) -> int: return 1
+    def __iter__(self): yield self
+    def __enter__(self): return self
+    def __exit__(self, exc_type, exc, tb): return False
+
+    @property
+    def area(self) -> float: return 0.0
+
+    @area.setter
+    def area(self, v): ...
+
+    @staticmethod
+    def helper(): ...
+
+    @classmethod
+    def from_dict(cls, d): return cls(**d)
+
+class Circle(Shape):
+    def __init__(self, name, r):
+        super().__init__(name)
+        self.r = r
+
+from enum import Enum, auto
+class Color(Enum):
+    RED = auto()
+    GREEN = auto()
+
+from abc import ABC, abstractmethod
+class Base(ABC):
+    @abstractmethod
+    def run(self): ...
+```
+
+---
+
+## Errors & Context Managers
+
+```python
+try:
+    risky()
+except (ValueError, KeyError) as e:
+    print(f'{type(e).__name__}: {e}')
+except Exception as e:
+    raise RuntimeError('wrapping') from e   # preserve the cause
+else:
+    print('no exception')
+finally:
+    cleanup()                               # always runs
+
+raise ValueError('bad input')
+assert x > 0, 'x must be positive'          # stripped by python -O
+
+class MyError(Exception):
+    """Custom exception."""
+
+with open('a') as fa, open('b', 'w') as fb:   # multiple context managers
+    fb.write(fa.read())
+
+import contextlib
+
+@contextlib.contextmanager
+def timer():
+    import time
+    t = time.perf_counter()
+    try:
+        yield
+    finally:
+        print(f'{time.perf_counter() - t:.3f}s')
+
+with contextlib.suppress(FileNotFoundError):
+    Path('x').unlink()
+```
+
+Common exceptions: `ValueError`, `TypeError`, `KeyError`, `IndexError`,
+`AttributeError`, `FileNotFoundError`, `PermissionError`, `ZeroDivisionError`,
+`StopIteration`, `RuntimeError`, `NotImplementedError`, `KeyboardInterrupt`,
+`ExceptionGroup` (**3.11+**, with `except*`).
+
+---
+
+## Files, Paths & Data
+
+```python
+from pathlib import Path
+
+p = Path.home() / 'proj' / 'data.json'
+p.exists(); p.is_file(); p.is_dir()
+p.name; p.stem; p.suffix; p.parent; p.parts
+p.read_text(encoding='utf-8'); p.write_text(s)
+p.read_bytes(); p.write_bytes(b)
+p.mkdir(parents=True, exist_ok=True)
+p.rename(other); p.unlink(missing_ok=True)
+p.stat().st_size; p.resolve(); p.absolute()
+list(Path('.').glob('*.py')); list(Path('.').rglob('*.py'))
+Path('.').iterdir()
+
+with open(p, encoding='utf-8') as f:
+    for line in f:                      # streams, doesn't load the whole file
+        process(line.rstrip('\n'))
+
+# modes: 'r' 'w' 'a' 'x' (exclusive create); add 'b' for binary
+```
+
+| Module | Use |
+|---|---|
+| `json` | `json.load(f)`, `json.dumps(o, indent=2, default=str)` |
+| `csv` | `csv.DictReader(f)`, `csv.DictWriter(f, fieldnames=...)` |
+| `tomllib` | `tomllib.load(f)` — read-only TOML (**3.11+**) |
+| `configparser` | INI files |
+| `pickle` | Python-native serialization (never load untrusted data) |
+| `sqlite3` | Built-in database |
+| `shutil` | `copy2`, `copytree`, `rmtree`, `move`, `which`, `disk_usage` |
+| `tempfile` | `TemporaryDirectory()`, `NamedTemporaryFile()` |
+| `glob` | `glob.glob('**/*.py', recursive=True)` |
+| `os` | `os.environ`, `os.getenv('X', 'default')`, `os.cpu_count()` |
+| `zipfile` / `tarfile` | Archives |
+| `datetime` | `datetime.now(tz=UTC)`, `.strftime('%Y-%m-%d')`, `timedelta(days=1)` |
+| `re` | `re.search`, `.findall`, `.sub`, `.compile`, named groups `(?P<n>...)` |
+| `decimal` / `fractions` | Exact arithmetic |
+| `statistics` | `mean`, `median`, `stdev` |
+| `secrets` | Cryptographic randomness (not `random`) |
+| `hashlib` | `hashlib.sha256(b).hexdigest()` |
+| `uuid` | `uuid.uuid4()` |
+| `logging` | `logging.basicConfig(level=logging.INFO)` |
+| `argparse` | CLI parsing |
+| `subprocess` | `run([...], capture_output=True, text=True, check=True)` |
+| `concurrent.futures` | `ThreadPoolExecutor`, `ProcessPoolExecutor` |
+| `asyncio` | `asyncio.run(main())`, `await`, `TaskGroup` (**3.11+**) |
+
+---
+
+## Environments & Tooling
+
+| Command | Action |
+|---|---|
+| `python3 -m venv .venv` | Create a virtualenv |
+| `source .venv/bin/activate` | Activate (`deactivate` to exit) |
+| `python3 -m pip install -e .` | Editable install of the local project |
+| `python3 -m pip install -U pkg` | Upgrade |
+| `python3 -m pip freeze > requirements.txt` | Pin what's installed |
+| `python3 -m pip list --outdated` | What could be upgraded |
+| `python3 -m pip show pkg` | Package details and location |
+| `uv venv && uv pip install -r requirements.txt` | Fast alternative to pip/venv |
+| `uv run script.py` | Run with auto-managed deps |
+| `pipx install black` | Install a CLI tool in isolation |
+| `python3 -m pytest -x -q --lf` | Tests: stop early, quiet, last-failed |
+| `python3 -m pytest -k 'name' -vv` | Filter by test name |
+| `python3 -m pytest --cov=pkg` | Coverage (needs `pytest-cov`) |
+| `ruff check --fix .` / `ruff format .` | Lint and format |
+| `black .` / `isort .` | Format / sort imports |
+| `mypy .` / `pyright` | Static type checking |
+| `python3 -m timeit -s 'setup' 'stmt'` | Microbenchmark |
+| `python3 -m cProfile -s cumtime s.py` | Profile |
+| `python3 -X dev script.py` | Development mode (extra warnings) |
+| `python3 -W error script.py` | Turn warnings into errors |
+| `python3 -m site` | Show the module search path |
+
+`pyproject.toml` is the standard project config — dependencies, build backend, and tool
+settings (ruff, mypy, pytest) all live there.
+
+---
+
+## Cheat Sheet Card
+
+```
+BUILTINS              STRINGS                COLLECTIONS            FILES
+len sum sorted        f'{v:.2f}'  f'{x=}'    d.get(k, dflt)         Path('.') / 'f'
+min max abs round     s.split(',')           d.setdefault(k, [])    p.read_text()
+enumerate zip range   ','.join(xs)           defaultdict(list)      p.glob('**/*.py')
+any all reversed      s.strip() .replace()   Counter(xs)            with open(p) as f
+isinstance type       s.startswith('x')      deque(maxlen=n)        json.dumps(o, indent=2)
+map filter iter next  r'\d+'  s.encode()     it.chain / islice      csv.DictReader(f)
+
+FLOW                  CLASSES                ERRORS                 TOOLS
+if/elif/else          @dataclass(frozen=True) try/except/else/finally python3 -m venv .venv
+for...else            def __init__(self)     raise X from e         pip install -r req.txt
+match/case (3.10+)    @property              contextlib.suppress()   pytest -x -q --lf
+[f(x) for x in xs]    @classmethod           assert cond, 'msg'      ruff check --fix .
+x if c else y         super().__init__()     breakpoint()            mypy .
+lambda x: x           Enum, ABC              ExceptionGroup (3.11+)  python3 -i script.py
+```
