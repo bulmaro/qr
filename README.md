@@ -1,7 +1,10 @@
 # Quick Reference
 
 Command-line quick reference sheets, plus a small static site that renders them
-in a browser. No server, no build step, no dependencies.
+in a browser. No build step, no dependencies — the `.md` files are the content,
+and the site reads them directly.
+
+Live at **https://bulmaro.github.io/qr/**
 
 ## The sheets
 
@@ -18,39 +21,50 @@ Each is readable as plain Markdown on its own — the site is additive.
 
 ## Viewing
 
-Open [index.html](index.html) by double-clicking it. That's all.
+Use the published site: **https://bulmaro.github.io/qr/**
 
-It works straight off the filesystem over `file://` because nothing is fetched:
-each page carries its own Markdown inline, and `<link>` / `<script src>` are not
-subject to the cross-origin rules that block `fetch()` on local files.
+Each page loads its `.md` file with `fetch()`, and browsers refuse that over
+`file://` — so double-clicking a sheet page from disk will not work; it shows a
+message linking to the published site instead. The overview page is the
+exception: it is generated from the `SHEETS` list in `qr.js`, so it works
+anywhere.
 
-The same files also serve over HTTP unchanged — see [Publishing](#publishing).
+To preview locally, serve the folder over HTTP:
+
+```bash
+python3 -m http.server 8000    # then open http://localhost:8000/
+```
+
+The `.md` files remain perfectly readable on their own, with no site at all.
 
 ## Layout
 
 ```
-index.html       overview, links to each sheet
-<sheet>.html     one page per sheet, with that sheet's Markdown inlined
-qr.js            the renderer — shared by all 7 pages
+index.html       overview — generated from the SHEETS list, fetches nothing
+<sheet>.html     a ~330-byte shell: <body data-sheet="git">
+qr.js            the renderer, the sheet list, the nav — shared by all 7 pages
 qr.css           all styling — shared by all 7 pages
-<sheet>.md       the sheets as standalone Markdown (the editable source)
+<sheet>.md       the sheets — the single source of the content
+.nojekyll        keeps GitHub Pages from converting .md files to .html
 ```
 
-Every page is the same three lines of substance:
+The `.md` files are the only copy of the content. Nothing is duplicated into
+the HTML: a sheet page names its source and stops there.
 
 ```html
-<link rel="stylesheet" href="qr.css">
-<script id="md" type="text/markdown">...the sheet's Markdown...</script>
+<body data-sheet="git">
+<nav id="nav"></nav>
+<main id="main"></main>
 <script src="qr.js"></script>
 ```
 
-`qr.js` reads that block, renders it into `<main>`, builds the shared nav
-(marking the current page), and jumps to `#anchor` if the URL has one.
-Navigation between sheets is ordinary links — real pages, not hash routing.
+`qr.js` reads `data-sheet`, fetches `git.md`, renders it into `<main>`, builds
+the shared nav (marking the current page), and jumps to `#anchor` if the URL has
+one. Navigation between sheets is ordinary links — real pages, not hash routing.
 
 ### The renderer
 
-`qr.js` is a hand-rolled line-based Markdown renderer, about 100 lines. It
+`qr.js` is a hand-rolled line-based Markdown renderer, about 145 lines. It
 handles what these sheets use: headings (with slugged `id`s for deep links),
 GFM tables including `\|` escapes, fenced code blocks, inline code, bold,
 links, lists, and horizontal rules. It does not handle nested lists,
@@ -67,25 +81,21 @@ dark variant and a 700px breakpoint that stacks the nav above the content.
 
 ## Editing a sheet
 
-The Markdown lives in two places: `<sheet>.md` and the `<script id="md">` block
-inside `<sheet>.html`. Edit the `.md`, then paste it into that block to update
-the page. There is no build step to do it for you — that's the cost of having
-the pages work over `file://`.
-
-Two constraints on sheet content, because it sits inside a `<script>` block:
-it must not contain `</script`, `<script`, or `<!--`. Any of those would end
-the block early. Everything else, including HTML-looking text, is safe.
+Edit the `.md` file. That's the whole procedure — the page picks it up on
+reload, because it holds no copy of its own.
 
 ## Adding a sheet
 
 1. Write `foo.md`.
-2. Copy an existing page to `foo.html`, replace the `<title>` and the contents
-   of the `<script id="md">` block.
-3. Add `'foo'` to the `SHEETS` array at the top of [qr.js](qr.js) — that puts it
-   in the nav on every page.
-4. Add a line to the list in the `<script id="md">` block of
-   [index.html](index.html) so the overview links to it.
+2. Copy any sheet page to `foo.html` and change two things: the `<title>` and
+   `data-sheet="foo"`.
+3. Add an entry to the `SHEETS` array at the top of [qr.js](qr.js):
 
+```js
+{ id: 'foo', blurb: 'What it covers.' }
+```
+
+That one entry puts it in the nav on every page and on the overview.
 Use `#`–`####` headings; they become linkable anchors automatically.
 
 ## Publishing

@@ -1,14 +1,30 @@
-/* Shared by index.html and every sheet page. Each page embeds its Markdown in
-   <script id="md" type="text/markdown">, so nothing is fetched and this works
-   straight off the filesystem — no server, ever. */
+/* Shared by index.html and every sheet page.
 
-var SHEETS = ['bash', 'git', 'powershell', 'python', 'ruby', 'tmux'];
+   A sheet page is a short shell that names its source:
+     <body data-sheet="git">
+   qr.js fetches git.md and renders it, so the .md files are the only copy of
+   the content — nothing is duplicated into the HTML.
+
+   fetch() cannot read local files, so this needs http(s); opening a page from
+   disk shows a message pointing at the published site. See README.md. */
+
+var SHEETS = [
+  { id: 'bash',       blurb: 'Navigation, expansion, redirection, job control' },
+  { id: 'git',        blurb: 'Branching, history surgery, rebases, recovery' },
+  { id: 'powershell', blurb: 'Cmdlets, objects, the pipeline, remoting' },
+  { id: 'python',     blurb: 'Idioms, stdlib highlights, tooling' },
+  { id: 'ruby',       blurb: 'Blocks, enumerables, stdlib patterns' },
+  { id: 'tmux',       blurb: 'Sessions, windows, panes, key bindings' }
+];
+
+var SITE = 'https://bulmaro.github.io/qr/';
 
 function esc(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // Inline spans. Code is pulled out first so ** and [] inside it stay literal.
+// The sentinels must stay as escapes, never literal chars: some tools drop them.
 function inline(s) {
   var codes = [];
   s = s.replace(/`([^`]*)`/g, function (m, c) { codes.push(c); return '\uE000' + (codes.length - 1) + '\uE001'; });
@@ -82,16 +98,48 @@ function render(src) {
   return out.join('\n');
 }
 
-var here = (location.pathname.split('/').pop() || 'index.html');
+var main = document.getElementById('main');
+var here = location.pathname.split('/').pop() || 'index.html';
+var sheet = document.body.getAttribute('data-sheet');
 
 document.getElementById('nav').innerHTML =
-  ['index.html'].concat(SHEETS.map(function (s) { return s + '.html'; })).map(function (f) {
-    return '<a class="' + (f === here ? 'on' : '') + '" href="' + f + '">' +
-           (f === 'index.html' ? 'Overview' : f.replace('.html', '')) + '</a>';
+  [{ id: 'index', label: 'Overview' }].concat(SHEETS).map(function (s) {
+    var file = s.id + '.html';
+    return '<a class="' + (file === here ? 'on' : '') + '" href="' + file + '">' +
+           (s.label || s.id) + '</a>';
   }).join('');
 
-document.getElementById('main').innerHTML = render(document.getElementById('md').textContent);
+// The overview is generated from SHEETS, so it has no source file of its own.
+function overview() {
+  return '# Quick Reference\n\nCommand-line cheat sheets, rendered in the browser.\n\n' +
+    SHEETS.map(function (s) { return '- [' + s.id + '](' + s.id + '.html) — ' + s.blurb; }).join('\n') + '\n';
+}
 
-// The page renders after load, so the browser's own anchor jump has already missed.
-var target = location.hash && document.getElementById(location.hash.slice(1));
-if (target) target.scrollIntoView();
+// We render after load, so the browser's own jump to #anchor has already missed.
+function jump() {
+  var target = location.hash && document.getElementById(location.hash.slice(1));
+  if (target) target.scrollIntoView();
+}
+
+if (!sheet) {
+  main.innerHTML = render(overview());
+  jump();
+} else {
+  fetch(sheet + '.md').then(function (r) {
+    if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+    return r.text();
+  }).then(function (md) {
+    main.innerHTML = render(md);
+    jump();
+  }).catch(function (e) {
+    document.title = 'Unavailable · Quick Reference';
+    main.innerHTML = '<h1>Could not load ' + esc(sheet) + '.md</h1>' +
+      (location.protocol === 'file:'
+        ? '<p>Browsers block scripts from reading local files, so opening this page ' +
+          'from disk cannot work. Use the published site:</p><p><a href="' +
+          SITE + esc(sheet) + '.html">' + SITE + esc(sheet) + '.html</a></p>' +
+          '<p>Or read the source directly: <a href="' + esc(sheet) + '.md">' +
+          esc(sheet) + '.md</a></p>'
+        : '<p>' + esc(e.message) + ' — is ' + esc(sheet) + '.md present next to this page?</p>');
+  });
+}
