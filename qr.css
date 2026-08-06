@@ -10,28 +10,32 @@ nav { position:sticky; top:0; flex:0 0 11rem; height:100vh; padding:1.5rem 0;
 nav a { display:block; padding:.4rem 1.25rem; color:var(--dim); text-decoration:none; }
 nav a:hover { color:var(--fg); }
 nav a.on { color:var(--link); font-weight:600; box-shadow:inset 3px 0 var(--link); }
-main { flex:1; min-width:0; padding:2rem 2.5rem 5rem; max-width:60rem; }
+main { flex:1 1 auto; min-width:0; padding:2rem 2.5rem 5rem; max-width:60rem; text-align:left; }
 
-@media (min-width:1100px) {
-  main {
-    max-width:none;
-    column-width:30rem;
-    column-gap:2.5rem;
+@media (min-width:900px) {
+  main { max-width:none; }
+  main pre {
+    column-span:all;
+    break-inside:avoid-column;
+    -webkit-column-break-inside:avoid;
+  }
+  main hr {
+    break-inside:auto;
   }
   main h1,
   main h2,
   main h3,
-  main table,
-  main pre,
-  main hr {
-    column-span:all;
-    break-inside:avoid-column;
+  main p,
+  main ul,
+  main ol,
+  main table {
+    break-inside:auto;
+    page-break-inside:auto;
+    -webkit-column-break-inside:auto;
   }
   main p,
   main ul,
   main ol {
-    break-inside:avoid-column;
-    page-break-inside:avoid;
     margin-bottom:1rem;
   }
 }
