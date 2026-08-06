@@ -23,17 +23,15 @@ main { flex:1; min-width:0; padding:2rem 2.5rem 5rem; max-width:60rem; }
   main h3,
   main table,
   main pre,
-  main hr,
-  main p,
-  main ul,
-  main ol {
+  main hr {
     column-span:all;
     break-inside:avoid-column;
-    page-break-inside:avoid;
   }
   main p,
   main ul,
   main ol {
+    break-inside:avoid-column;
+    page-break-inside:avoid;
     margin-bottom:1rem;
   }
 }
