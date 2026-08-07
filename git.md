@@ -5,6 +5,16 @@ Notation: `<ref>` is a branch, tag, or commit SHA. `HEAD` is your current commit
 Verified against git 2.47.
 
 ---
+## Favorite
+
+| Command | Action |
+|---|---|
+| `git merge --abort` | Unintended pull |
+| `git rebase --abort` | Unintended pull |
+| `git branch -d branch` | Delete branch (if merged) |
+| `git branch -D branch` | Delete branch (force even if NOT merged) |
+| `git push -d origin branch` | Delete remote branch |
+
 
 ## Most Common
 
